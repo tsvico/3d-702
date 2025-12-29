@@ -2,7 +2,6 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <!-- 添加 viewport-fit=cover 适配刘海屏和全面屏 -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
@@ -15,10 +14,9 @@
         height: 100%;
         margin: 0;
         padding: 0;
-        overflow: hidden; /* 禁止页面滚动 */
+        overflow: hidden;
         background-color: #000;
         font-family: "Microsoft YaHei", sans-serif;
-        /* 关键：使用 fixed 锁定视口，解决移动端地址栏遮挡问题 */
         position: fixed;
         top: 0;
         left: 0;
@@ -29,11 +27,9 @@
         height: 100%;
         display: block;
         outline: none;
-        /* 禁止移动端浏览器的默认手势 (如侧滑返回) */
         touch-action: none;
       }
 
-      /* PC端鼠标手势 */
       @media (hover: hover) {
         #viewer-container {
           cursor: grab;
@@ -43,17 +39,64 @@
         }
       }
 
-      /* 底部导航栏样式 */
+      /* 顶部控制按钮 */
+      #top-controls {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 100;
+        display: flex;
+        gap: 10px;
+      }
+      .control-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: white;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        transition: all 0.3s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .control-btn:hover {
+        background: rgba(0, 0, 0, 0.7);
+      }
+      .control-btn.active {
+        color: #ff4d4f;
+        background: rgba(0, 0, 0, 0.8);
+      }
+      .control-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+        margin-bottom: 2px;
+      }
+      .control-btn span {
+        font-size: 10px;
+      }
+      .rotating-icon {
+        animation: spin 4s linear infinite;
+      }
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* 底部导航 */
       #bottom-nav {
         position: absolute;
-        /* 适配 iPhone 底部小黑条 (Safe Area) */
         bottom: max(20px, env(safe-area-inset-bottom));
         left: 50%;
         transform: translateX(-50%);
         width: 90%;
         max-width: 800px;
         background: rgba(0, 0, 0, 0.6);
-        padding: 10px; /* 稍微减小内边距 */
+        padding: 10px;
         border-radius: 8px;
         z-index: 100;
         display: flex;
@@ -61,31 +104,26 @@
         overflow-x: auto;
         gap: 10px;
         backdrop-filter: blur(5px);
-        box-sizing: border-box; /* 确保 padding 不撑大宽度 */
-
-        /* 隐藏滚动条 */
-        -webkit-overflow-scrolling: touch; /* iOS 惯性滚动 */
-        scrollbar-width: none; /* Firefox */
+        box-sizing: border-box;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
       }
       #bottom-nav::-webkit-scrollbar {
-        display: none; /* Chrome/Safari */
+        display: none;
       }
 
-      /* 单个场景卡片 */
       .scene-card {
         flex: 0 0 auto;
-        width: 100px; /* PC 默认宽度 */
-        height: 75px; /* PC 默认高度 */
+        width: 100px;
+        height: 75px;
         position: relative;
         cursor: pointer;
         border-radius: 4px;
         overflow: hidden;
         border: 2px solid transparent;
         transition: all 0.3s ease;
-        /* 防止手机点击高亮闪烁 */
         -webkit-tap-highlight-color: transparent;
       }
-
       .scene-card img {
         width: 100%;
         height: 100%;
@@ -93,7 +131,6 @@
         display: block;
         opacity: 0.7;
       }
-
       .scene-card .scene-name {
         position: absolute;
         bottom: 0;
@@ -105,11 +142,10 @@
         text-align: center;
         padding: 4px 0;
         pointer-events: none;
-        white-space: nowrap; /* 文字不换行 */
+        white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis; /* 超出显示省略号 */
+        text-overflow: ellipsis;
       }
-
       .scene-card.active {
         border-color: #ff4d4f;
       }
@@ -120,24 +156,18 @@
         background: rgba(255, 77, 79, 0.8);
       }
 
-      /* =========================================
-         移动端适配 (Media Query)
-         ========================================= */
       @media (max-width: 768px) {
         #bottom-nav {
-          width: 95%; /* 手机上宽度占比更大 */
+          width: 95%;
           padding: 8px;
-          /* 手机上底部距离稍微小一点，留给画面更多空间 */
           bottom: max(15px, env(safe-area-inset-bottom));
         }
-
         .scene-card {
-          width: 80px; /* 手机上缩略图变小 */
+          width: 80px;
           height: 60px;
         }
-
         .scene-card .scene-name {
-          font-size: 10px; /* 字体变小 */
+          font-size: 10px;
           padding: 2px 0;
         }
       }
@@ -148,7 +178,7 @@
         left: 50%;
         transform: translate(-50%, -50%);
         color: white;
-        font-size: 18px; /* 稍微调小一点 */
+        font-size: 18px;
         background: rgba(0, 0, 0, 0.6);
         padding: 15px 25px;
         border-radius: 8px;
@@ -169,10 +199,23 @@
     </script>
   </head>
   <body>
-    <div id="bottom-nav">
-      <!-- JS 动态生成 -->
+    <!-- 自动旋转按钮 -->
+    <div id="top-controls">
+      <div id="btn-autorotate" class="control-btn active" title="自动旋转">
+        <svg
+          viewBox="0 0 1024 1024"
+          version="1.1"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333c106.666667 0 206.933333-38.4 285.866667-102.4l-66.133334-53.333333c-61.866667 49.066667-138.666667 76.8-219.733333 76.8-192 0-349.866667-151.466667-349.866667-339.2s157.866667-341.333333 349.866667-341.333333c94.933333 0 183.466667 36.266667 249.6 96l-104.533334 85.333333H960V64l-117.333333 98.133333C757.333333 91.733333 637.866667 74.666667 512 74.666667z"
+          />
+        </svg>
+        <span>自动旋转</span>
+      </div>
     </div>
 
+    <div id="bottom-nav"></div>
     <div id="loading">加载中...</div>
     <div id="viewer-container"></div>
 
@@ -180,7 +223,7 @@
       import * as THREE from "three";
       import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-      // 配置
+      // 配置，如果场景图调整主要修改这里
       const scenesConfig = [
         { id: "scene1", name: "主卧", path: "./scenes/scene1/" },
         { id: "scene2", name: "客厅", path: "./scenes/scene2/" },
@@ -188,6 +231,9 @@
         { id: "scene4", name: "南次卧", path: "./scenes/scene4/" },
       ];
 
+      /**
+       * 场景图文件加载顺序，根据实际文件名调整
+       * */
       const fileOrder = [
         "pano_r.jpg",
         "pano_l.jpg",
@@ -199,12 +245,18 @@
 
       let camera, scene, renderer, controls;
       let currentSceneId = null;
+      // 自动旋转状态，默认进入开启
+      let isAutoRotating = true;
+
       const container = document.getElementById("viewer-container");
       const loadingEl = document.getElementById("loading");
 
       init();
       animate();
 
+      /**
+       * 初始化场景查看器
+       */
       function init() {
         scene = new THREE.Scene();
 
@@ -218,9 +270,18 @@
         );
         camera.position.set(0, 0, 0.1);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        // 画质优化
+        renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          precision: "highp",
+          powerPreference: "high-performance",
+        });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // 颜色空间优化
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+
         container.appendChild(renderer.domElement);
 
         controls = new OrbitControls(camera, renderer.domElement);
@@ -228,10 +289,25 @@
         controls.enablePan = false;
         controls.enableDamping = true;
         controls.dampingFactor = 0.1;
-        // 手机触屏灵敏度调整：PC -1.0 刚好，手机上可能需要调整
-        controls.rotateSpeed = -1.0;
+        // 旋转速度调整
+        controls.rotateSpeed = -0.5;
+
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+
+        // ==========================================
+        // 监听用户交互开始事件
+        // ==========================================
+        controls.addEventListener("start", function () {
+          // 如果用户开始拖拽/缩放，且当前是自动旋转状态
+          if (isAutoRotating) {
+            // 彻底关闭自动旋转
+            toggleAutoRotate(false);
+          }
+        });
 
         initUI();
+        initTopControls();
 
         if (scenesConfig.length > 0) {
           loadScene(scenesConfig[0].id);
@@ -241,6 +317,46 @@
         container.addEventListener("wheel", onMouseWheel, { passive: false });
       }
 
+      // 封装一个切换函数，方便多处调用
+      function toggleAutoRotate(state) {
+        isAutoRotating = state;
+        controls.autoRotate = state;
+
+        // 同步更新 UI
+        const btn = document.getElementById("btn-autorotate");
+        const svg = btn.querySelector("svg");
+
+        if (state) {
+          btn.classList.add("active");
+          svg.classList.add("rotating-icon");
+        } else {
+          btn.classList.remove("active");
+          svg.classList.remove("rotating-icon");
+        }
+      }
+
+      /**
+       * 初始化顶部控制按钮
+       */
+      function initTopControls() {
+        const btn = document.getElementById("btn-autorotate");
+        const svg = btn.querySelector("svg");
+
+        // 按钮点击事件
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleAutoRotate(!isAutoRotating);
+        });
+
+        // 初始化默认状态UI
+        if (isAutoRotating) {
+          svg.classList.add("rotating-icon");
+        }
+      }
+
+      /**
+       * 处理鼠标滚轮事件，调整相机视野
+       */
       function onMouseWheel(event) {
         event.preventDefault();
         const minFov = 30;
@@ -253,6 +369,9 @@
         camera.updateProjectionMatrix();
       }
 
+      /**
+       * 加载指定场景
+       */
       function loadScene(sceneId) {
         if (currentSceneId === sceneId) return;
 
@@ -266,11 +385,16 @@
         loader.load(
           urls,
           function (texture) {
+            // 配置纹理参数，禁用 mipmap 生成
+            texture.generateMipmaps = false;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            // texture.colorSpace = THREE.SRGBColorSpace;
+
             scene.background = texture;
             loadingEl.style.display = "none";
             currentSceneId = sceneId;
             updateUIState(sceneId);
-            console.log(`场景 ${config.name} 加载完成`);
           },
           undefined,
           function (err) {
@@ -280,10 +404,12 @@
         );
       }
 
+      /**
+       * 初始化场景切换卡片
+       */
       function initUI() {
         const navContainer = document.getElementById("bottom-nav");
         navContainer.innerHTML = "";
-
         scenesConfig.forEach((cfg) => {
           const card = document.createElement("div");
           card.className = "scene-card";
@@ -304,29 +430,29 @@
           navContainer.appendChild(card);
 
           card.addEventListener("click", (e) => {
-            // 阻止冒泡，防止误触全景图旋转
             e.stopPropagation();
             loadScene(cfg.id);
           });
-          // 兼容手机触摸
+
+          // 兼容移动端点击事件
           card.addEventListener(
             "touchstart",
             (e) => {
               e.stopPropagation();
-              // touchstart 不直接触发加载，交给 click 处理即可
-              // 这里仅用于阻止触摸穿透到 canvas
             },
             { passive: false }
           );
         });
       }
 
+      /**
+       * 更新场景切换卡片状态
+       */
       function updateUIState(activeId) {
         const cards = document.querySelectorAll(".scene-card");
         cards.forEach((card) => {
           if (card.dataset.id === activeId) {
             card.classList.add("active");
-            // 确保可见
             card.scrollIntoView({
               behavior: "smooth",
               block: "nearest",
@@ -338,12 +464,18 @@
         });
       }
 
+      /**
+       * 处理窗口 resize 事件，更新相机和渲染器尺寸
+       */
       function onWindowResize() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
       }
 
+      /**
+       * 动画循环函数，更新场景渲染
+       */
       function animate() {
         requestAnimationFrame(animate);
         controls.update();

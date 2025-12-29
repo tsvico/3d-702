@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D 全景图查看器</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #000;
+        font-family: sans-serif;
+      }
+      #viewer-container {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        cursor: grab;
+      }
+      #viewer-container:active {
+        cursor: grabbing;
+      }
+
+      /* UI 控件样式 */
+      #ui-layer {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 10px;
+        border-radius: 8px;
+        color: white;
+        z-index: 100;
+      }
+      select {
+        padding: 5px;
+        font-size: 14px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        outline: none;
+      }
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 24px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 20px;
+        border-radius: 10px;
+        display: none;
+        pointer-events: none;
+      }
+    </style>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://registry.npmmirror.com/three/0.160.0/files/build/three.module.js",
+          "three/addons/": "https://registry.npmmirror.com/three/0.160.0/files/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="ui-layer">
+      <label for="scene-selector">选择场景：</label>
+      <select id="scene-selector"></select>
+    </div>
+
+    <div id="loading">加载中...</div>
+    <div id="viewer-container"></div>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+      // ==========================================
+      // 配置区域
+      // ==========================================
+      const scenesConfig = [
+        { id: "scene1", name: "主卧", path: "./scenes/scene1/" },
+        { id: "scene2", name: "客厅", path: "./scenes/scene2/" },
+        { id: "scene3", name: "厨房", path: "./scenes/scene3/" },
+        { id: "scene4", name: "南次卧", path: "./scenes/scene4/" },
+      ];
+
+      const fileOrder = [
+        "pano_r.jpg",
+        "pano_l.jpg",
+        "pano_u.jpg",
+        "pano_d.jpg",
+        "pano_f.jpg",
+        "pano_b.jpg",
+      ];
+
+      // ==========================================
+      // 初始化变量
+      // ==========================================
+      let camera, scene, renderer, controls;
+      const container = document.getElementById("viewer-container");
+      const loadingEl = document.getElementById("loading");
+
+      init();
+      animate();
+
+      function init() {
+        scene = new THREE.Scene();
+
+        // 初始 FOV 设为 80，视野更广
+        camera = new THREE.PerspectiveCamera(
+          80,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          1000
+        );
+        camera.position.set(0, 0, 0.1);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // ==========================================
+        // 控制器手感调优
+        // ==========================================
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableZoom = false; // 禁用物理移动缩放
+        controls.enablePan = false;
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.1; // 增加阻尼感
+        controls.rotateSpeed = -1.0; // 1:1 跟手
+
+        // 初始化 UI
+        initUI();
+
+        // 默认加载第一个场景
+        if (scenesConfig.length > 0) {
+          loadScene(scenesConfig[0].id);
+        }
+
+        // 监听窗口大小变化
+        window.addEventListener("resize", onWindowResize);
+
+        // 自定义滚轮缩放 (FOV 方式)
+        container.addEventListener("wheel", onMouseWheel, { passive: false });
+      }
+
+      function onMouseWheel(event) {
+        event.preventDefault();
+        const minFov = 30;
+        const maxFov = 100;
+
+        if (event.deltaY > 0) {
+          camera.fov = Math.min(maxFov, camera.fov + 2);
+        } else {
+          camera.fov = Math.max(minFov, camera.fov - 2);
+        }
+        camera.updateProjectionMatrix();
+      }
+
+      function loadScene(sceneId) {
+        const config = scenesConfig.find((s) => s.id === sceneId);
+        if (!config) return;
+
+        loadingEl.style.display = "block";
+        const urls = fileOrder.map((filename) => config.path + filename);
+        const loader = new THREE.CubeTextureLoader();
+
+        loader.load(
+          urls,
+          function (texture) {
+            scene.background = texture;
+            loadingEl.style.display = "none";
+            console.log(`场景 ${config.name} 加载完成`);
+          },
+          undefined,
+          function (err) {
+            console.error("加载失败:", err);
+            loadingEl.textContent = "加载失败 (检查网络/路径)";
+          }
+        );
+      }
+
+      function initUI() {
+        const selector = document.getElementById("scene-selector");
+        scenesConfig.forEach((cfg) => {
+          const option = document.createElement("option");
+          option.value = cfg.id;
+          option.text = cfg.name;
+          selector.appendChild(option);
+        });
+        selector.addEventListener("change", (e) => loadScene(e.target.value));
+      }
+
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>

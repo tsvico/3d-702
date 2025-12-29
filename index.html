@@ -2,56 +2,160 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 添加 viewport-fit=cover 适配刘海屏和全面屏 -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <title>3D 全景图查看器</title>
     <style>
+      html,
       body {
+        width: 100%;
+        height: 100%;
         margin: 0;
-        overflow: hidden;
+        padding: 0;
+        overflow: hidden; /* 禁止页面滚动 */
         background-color: #000;
-        font-family: sans-serif;
-      }
-      #viewer-container {
-        width: 100vw;
-        height: 100vh;
-        display: block;
-        cursor: grab;
-      }
-      #viewer-container:active {
-        cursor: grabbing;
+        font-family: "Microsoft YaHei", sans-serif;
+        /* 关键：使用 fixed 锁定视口，解决移动端地址栏遮挡问题 */
+        position: fixed;
+        top: 0;
+        left: 0;
       }
 
-      /* UI 控件样式 */
-      #ui-layer {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: rgba(0, 0, 0, 0.6);
-        padding: 10px;
-        border-radius: 8px;
-        color: white;
-        z-index: 100;
-      }
-      select {
-        padding: 5px;
-        font-size: 14px;
-        border-radius: 4px;
-        border: none;
-        cursor: pointer;
+      #viewer-container {
+        width: 100%;
+        height: 100%;
+        display: block;
         outline: none;
+        /* 禁止移动端浏览器的默认手势 (如侧滑返回) */
+        touch-action: none;
       }
+
+      /* PC端鼠标手势 */
+      @media (hover: hover) {
+        #viewer-container {
+          cursor: grab;
+        }
+        #viewer-container:active {
+          cursor: grabbing;
+        }
+      }
+
+      /* 底部导航栏样式 */
+      #bottom-nav {
+        position: absolute;
+        /* 适配 iPhone 底部小黑条 (Safe Area) */
+        bottom: max(20px, env(safe-area-inset-bottom));
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 800px;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 10px; /* 稍微减小内边距 */
+        border-radius: 8px;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        overflow-x: auto;
+        gap: 10px;
+        backdrop-filter: blur(5px);
+        box-sizing: border-box; /* 确保 padding 不撑大宽度 */
+
+        /* 隐藏滚动条 */
+        -webkit-overflow-scrolling: touch; /* iOS 惯性滚动 */
+        scrollbar-width: none; /* Firefox */
+      }
+      #bottom-nav::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+      }
+
+      /* 单个场景卡片 */
+      .scene-card {
+        flex: 0 0 auto;
+        width: 100px; /* PC 默认宽度 */
+        height: 75px; /* PC 默认高度 */
+        position: relative;
+        cursor: pointer;
+        border-radius: 4px;
+        overflow: hidden;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        /* 防止手机点击高亮闪烁 */
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .scene-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        opacity: 0.7;
+      }
+
+      .scene-card .scene-name {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        font-size: 12px;
+        text-align: center;
+        padding: 4px 0;
+        pointer-events: none;
+        white-space: nowrap; /* 文字不换行 */
+        overflow: hidden;
+        text-overflow: ellipsis; /* 超出显示省略号 */
+      }
+
+      .scene-card.active {
+        border-color: #ff4d4f;
+      }
+      .scene-card.active img {
+        opacity: 1;
+      }
+      .scene-card.active .scene-name {
+        background: rgba(255, 77, 79, 0.8);
+      }
+
+      /* =========================================
+         移动端适配 (Media Query)
+         ========================================= */
+      @media (max-width: 768px) {
+        #bottom-nav {
+          width: 95%; /* 手机上宽度占比更大 */
+          padding: 8px;
+          /* 手机上底部距离稍微小一点，留给画面更多空间 */
+          bottom: max(15px, env(safe-area-inset-bottom));
+        }
+
+        .scene-card {
+          width: 80px; /* 手机上缩略图变小 */
+          height: 60px;
+        }
+
+        .scene-card .scene-name {
+          font-size: 10px; /* 字体变小 */
+          padding: 2px 0;
+        }
+      }
+
       #loading {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
         color: white;
-        font-size: 24px;
-        background: rgba(0, 0, 0, 0.5);
-        padding: 20px;
-        border-radius: 10px;
+        font-size: 18px; /* 稍微调小一点 */
+        background: rgba(0, 0, 0, 0.6);
+        padding: 15px 25px;
+        border-radius: 8px;
         display: none;
         pointer-events: none;
+        z-index: 101;
+        white-space: nowrap;
       }
     </style>
 
@@ -65,9 +169,8 @@
     </script>
   </head>
   <body>
-    <div id="ui-layer">
-      <label for="scene-selector">选择场景：</label>
-      <select id="scene-selector"></select>
+    <div id="bottom-nav">
+      <!-- JS 动态生成 -->
     </div>
 
     <div id="loading">加载中...</div>
@@ -77,9 +180,7 @@
       import * as THREE from "three";
       import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-      // ==========================================
-      // 配置区域
-      // ==========================================
+      // 配置
       const scenesConfig = [
         { id: "scene1", name: "主卧", path: "./scenes/scene1/" },
         { id: "scene2", name: "客厅", path: "./scenes/scene2/" },
@@ -96,10 +197,8 @@
         "pano_b.jpg",
       ];
 
-      // ==========================================
-      // 初始化变量
-      // ==========================================
       let camera, scene, renderer, controls;
+      let currentSceneId = null;
       const container = document.getElementById("viewer-container");
       const loadingEl = document.getElementById("loading");
 
@@ -109,9 +208,10 @@
       function init() {
         scene = new THREE.Scene();
 
-        // 初始 FOV 设为 80，视野更广
+        // 手机上 FOV 设置大一点(85)，因为手机屏幕窄，视野窄会显得局促
+        const isMobile = window.innerWidth < 768;
         camera = new THREE.PerspectiveCamera(
-          80,
+          isMobile ? 85 : 80,
           window.innerWidth / window.innerHeight,
           0.1,
           1000
@@ -123,28 +223,21 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
-        // ==========================================
-        // 控制器手感调优
-        // ==========================================
         controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableZoom = false; // 禁用物理移动缩放
+        controls.enableZoom = false;
         controls.enablePan = false;
         controls.enableDamping = true;
-        controls.dampingFactor = 0.1; // 增加阻尼感
-        controls.rotateSpeed = -1.0; // 1:1 跟手
+        controls.dampingFactor = 0.1;
+        // 手机触屏灵敏度调整：PC -1.0 刚好，手机上可能需要调整
+        controls.rotateSpeed = -1.0;
 
-        // 初始化 UI
         initUI();
 
-        // 默认加载第一个场景
         if (scenesConfig.length > 0) {
           loadScene(scenesConfig[0].id);
         }
 
-        // 监听窗口大小变化
         window.addEventListener("resize", onWindowResize);
-
-        // 自定义滚轮缩放 (FOV 方式)
         container.addEventListener("wheel", onMouseWheel, { passive: false });
       }
 
@@ -152,7 +245,6 @@
         event.preventDefault();
         const minFov = 30;
         const maxFov = 100;
-
         if (event.deltaY > 0) {
           camera.fov = Math.min(maxFov, camera.fov + 2);
         } else {
@@ -162,6 +254,8 @@
       }
 
       function loadScene(sceneId) {
+        if (currentSceneId === sceneId) return;
+
         const config = scenesConfig.find((s) => s.id === sceneId);
         if (!config) return;
 
@@ -174,25 +268,74 @@
           function (texture) {
             scene.background = texture;
             loadingEl.style.display = "none";
+            currentSceneId = sceneId;
+            updateUIState(sceneId);
             console.log(`场景 ${config.name} 加载完成`);
           },
           undefined,
           function (err) {
             console.error("加载失败:", err);
-            loadingEl.textContent = "加载失败 (检查网络/路径)";
+            loadingEl.textContent = "加载失败";
           }
         );
       }
 
       function initUI() {
-        const selector = document.getElementById("scene-selector");
+        const navContainer = document.getElementById("bottom-nav");
+        navContainer.innerHTML = "";
+
         scenesConfig.forEach((cfg) => {
-          const option = document.createElement("option");
-          option.value = cfg.id;
-          option.text = cfg.name;
-          selector.appendChild(option);
+          const card = document.createElement("div");
+          card.className = "scene-card";
+          card.dataset.id = cfg.id;
+
+          const img = document.createElement("img");
+          img.src = cfg.path + "pano_f.jpg";
+          img.alt = cfg.name;
+          // 防止图片拖拽影响体验
+          img.draggable = false;
+
+          const label = document.createElement("div");
+          label.className = "scene-name";
+          label.textContent = cfg.name;
+
+          card.appendChild(img);
+          card.appendChild(label);
+          navContainer.appendChild(card);
+
+          card.addEventListener("click", (e) => {
+            // 阻止冒泡，防止误触全景图旋转
+            e.stopPropagation();
+            loadScene(cfg.id);
+          });
+          // 兼容手机触摸
+          card.addEventListener(
+            "touchstart",
+            (e) => {
+              e.stopPropagation();
+              // touchstart 不直接触发加载，交给 click 处理即可
+              // 这里仅用于阻止触摸穿透到 canvas
+            },
+            { passive: false }
+          );
         });
-        selector.addEventListener("change", (e) => loadScene(e.target.value));
+      }
+
+      function updateUIState(activeId) {
+        const cards = document.querySelectorAll(".scene-card");
+        cards.forEach((card) => {
+          if (card.dataset.id === activeId) {
+            card.classList.add("active");
+            // 确保可见
+            card.scrollIntoView({
+              behavior: "smooth",
+              block: "nearest",
+              inline: "center",
+            });
+          } else {
+            card.classList.remove("active");
+          }
+        });
       }
 
       function onWindowResize() {

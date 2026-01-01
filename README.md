@@ -47,7 +47,7 @@ Project/
 
 如果你手头有一张完整的全景图（通常是 2:1 比例的长方形图片），可以使用本项目自带的工具将其转换为 6 面图。
 
-1.  **打开工具**：直接在浏览器打开 `tool.html` (或手机扫描访问)。
+1.  **打开工具**：直接在浏览器打开 `tool.html` (或点击[这里](https://www.tbox.fun/plugins/720cute/))。
 2.  **上传图片**：点击上传你的全景图（JPG/PNG）。
 3.  **预览与导出**：
     - 工具会自动生成 3D 预览。
@@ -107,6 +107,10 @@ const scenesConfig = [
   // ... 添加更多
 ];
 ```
+
+## 🔗 参考与致谢
+
+本项目切片转换工具 (tool.html) 的核心切分算法参考了开源项目 [panorama-to-cubemap](https://github.com/jaxry/panorama-to-cubemap)，在此感谢作者 jaxry 的贡献。
 
 ## 🤝 贡献与支持
 
